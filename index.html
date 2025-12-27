@@ -29,13 +29,19 @@
             background: var(--bg); background-attachment: fixed; 
             color: var(--text); font-family: 'Amiri', serif; 
             min-height: 100vh; transition: 0.5s; overflow-x: hidden;
-            /* Status Bar aur Bottom Notch k liye munasib padding */
-            padding-top: env(safe-area-inset-top, 20px);
+            /* Bottom Notch padding */
             padding-bottom: env(safe-area-inset-bottom, 120px);
         }
 
-        .hide-header { transform: translateY(-110%); transition: 0.4s ease-in-out; position: fixed; width: 100%; }
-        header { transition: 0.4s ease-in-out; }
+        /* Fixed/Sticky Header logic corrected for Status Bar */
+        header { 
+            transition: 0.4s ease-in-out; 
+            background: var(--bg); /* Added solid background to prevent overlap transparency */
+            padding-top: env(safe-area-inset-top, 20px) !important;
+            z-index: 100;
+        }
+
+        .hide-header { transform: translateY(-110%); position: fixed; width: 100%; }
 
         .animated-title {
             font-size: clamp(1.4rem, 5vw, 2.2rem);
@@ -54,7 +60,6 @@
             inset: 0; width: 300px; z-index: 1000; 
             background: var(--sidebar-bg); backdrop-filter: blur(40px);
             border-right: 1px solid var(--border);
-            /* Sidebar mein bhi top space */
             padding-top: env(safe-area-inset-top, 40px);
         }
         .sidebar.active { transform: translateX(0); }
@@ -157,7 +162,7 @@
         <div id="navList" class="space-y-2 overflow-y-auto max-h-[50vh]"></div>
     </div>
 
-    <header id="mainHeader" class="p-3 sticky top-0 z-50 bg-white/5 backdrop-blur-xl border-b border-black/5">
+    <header id="mainHeader" class="p-3 sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex gap-2">
