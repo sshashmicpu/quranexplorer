@@ -2,7 +2,7 @@
 <html lang="ur">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>قرآن ایکسپلورر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
@@ -29,6 +29,9 @@
             background: var(--bg); background-attachment: fixed; 
             color: var(--text); font-family: 'Amiri', serif; 
             min-height: 100vh; transition: 0.5s; overflow-x: hidden;
+            /* Status Bar aur Bottom Notch k liye munasib padding */
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 120px);
         }
 
         .hide-header { transform: translateY(-110%); transition: 0.4s ease-in-out; position: fixed; width: 100%; }
@@ -51,6 +54,8 @@
             inset: 0; width: 300px; z-index: 1000; 
             background: var(--sidebar-bg); backdrop-filter: blur(40px);
             border-right: 1px solid var(--border);
+            /* Sidebar mein bhi top space */
+            padding-top: env(safe-area-inset-top, 40px);
         }
         .sidebar.active { transform: translateX(0); }
 
@@ -80,7 +85,6 @@
             font-size: 12px; font-weight: 900; margin: 0 auto;
         }
 
-        /* Border color removed, back to original style */
         .hybrid-box {
             background: var(--glass); backdrop-filter: blur(15px);
             border-radius: 18px; padding: 1.2rem; margin-bottom: 0.8rem;
@@ -104,7 +108,7 @@
         .hidden-ui { display: none !important; }
         .urdu-font { font-family: 'Noto Nastaliq Urdu', serif; }
         
-        #searchPanel, #translationModal { position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: none; padding: 20px; overflow-y: auto; }
+        #searchPanel, #translationModal { position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: none; padding: 20px; overflow-y: auto; padding-top: env(safe-area-inset-top, 40px); }
         
         .t-bar::-webkit-scrollbar { display: none; }
         .t-btn { font-size: 9px; white-space: nowrap; padding: 4px 10px; flex-shrink: 0; }
@@ -115,6 +119,7 @@
             text-align: center; padding: 5px; font-size: 13px; font-weight: bold;
             color: var(--accent); z-index: 40; border-top: 1px solid var(--border);
             display: none; box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+            padding-bottom: env(safe-area-inset-bottom, 5px);
         }
     </style>
 </head>
@@ -415,13 +420,10 @@
             document.getElementById('pLoc').innerText = `Ayat: ${inSurah}`;
         }
 
-        /* UPDATED: Play Full now continues from current position if something is selected */
         function playFullSurah() {
             if(activeContentAyahs.length === 0) return;
             isFullPlayMode = true;
             document.getElementById('fullSurahBtn').classList.add('active-t');
-            
-            // If currentAyahIndex is already set (user clicked or scrolled), play from there
             const a = activeContentAyahs[currentAyahIndex];
             playAyat(a.number, a.numberInSurah, currentAyahIndex);
         }
