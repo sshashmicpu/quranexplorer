@@ -684,7 +684,9 @@
         function adjustSpeed(delta) { if (!scrollTask) toggleScroll(); scrollSpeed = Math.max(0.2, scrollSpeed + delta); }
         document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock(); });
     
-
+</script>
+<script>
+    
     // Service Worker Registration & Update Logic
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
