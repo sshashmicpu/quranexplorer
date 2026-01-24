@@ -684,5 +684,28 @@
         function adjustSpeed(delta) { if (!scrollTask) toggleScroll(); scrollSpeed = Math.max(0.2, scrollSpeed + delta); }
         document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock(); });
     </script>
+
+    // Service Worker Registration & Update Logic
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('SW Registered!');
+            
+            // Nayi update check karne ke liye
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Jab naya version mil jaye to user ko batayein ya auto-refresh karein
+                        console.log('New update available. Please refresh.');
+                        // Agar aap chahte hain ke auto update ho jaye:
+                        // window.location.reload(); 
+                    }
+                };
+            };
+        }).catch(err => console.log('SW Registration Failed:', err));
+    });
+}
+</script>
 </body>
 </html>
