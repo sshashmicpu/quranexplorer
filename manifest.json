@@ -1,0 +1,24 @@
+{
+  "name": "Quran Explorer | HashTech",
+  "short_name": "Quran Explorer",
+  "description": "Read, Listen, understand and search Quran With urdu multiple translations.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#d4af37",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
