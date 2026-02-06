@@ -2,7 +2,7 @@
   Strategy: Cache-First (Offline Optimized)
 */
 
-const CACHE_NAME = 'quran-explorer-v1.2.2'; // Version update kiya hai taake naya cache load ho
+const CACHE_NAME = 'quran-explorer-v1.2.3'; // Version update kiya hai taake naya cache load ho
 const OFFLINE_URL = 'index.html';
 
 // Essential files - Inke shuru se '/' hata diya hai taake GitHub Pages par masla na ho
