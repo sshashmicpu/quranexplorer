@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>قرآن ایکسپلورر - سمارٹ آف لائن</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Offline Ready!'))
+            .catch(err => console.log('PWA Error:', err));
+        });
+      }
+    </script>
+
+    <style>
+        :root {
+            --accent: #00f2ff;
+            --bg: radial-gradient(circle at 50% 10%, #1e293b, #0f172a, #020617);
+            --glass: rgba(255, 255, 255, 0.05);
+            --text: #f1f5f9;
+            --border: rgba(0, 242, 255, 0.15);
+            --sidebar-bg: rgba(15, 23, 42, 0.98);
+        }
+
+        .light-theme {
+            --accent: #0ea5e9;
+            --bg: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            --glass: rgba(255, 255, 255, 0.8);
+            --text: #1e293b;
+            --border: rgba(14, 165, 233, 0.3);
+            --sidebar-bg: rgba(255, 255, 255, 0.98);
+        }
+
+        body { 
+            background: var(--bg); background-attachment: fixed; 
+            color: var(--text); font-family: 'Amiri', serif; 
+            min-height: 100vh; transition: 0.5s; overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 160px);
+        }
+
+        header { 
+            transition: 0.4s ease-in-out; 
+            background: var(--bg);
+            padding-top: env(safe-area-inset-top, 20px) !important;
+            z-index: 100;
+        }
+
+        .hide-header { transform: translateY(-110%); position: fixed; width: 100%; }
+
+        .animated-title {
+            font-size: clamp(1.4rem, 5vw, 2.2rem);
+            font-weight: 900;
+            white-space: nowrap;
+            background: linear-gradient(to right, #00f2ff, #00ff88, #7000ff, #ff0080, #00f2ff);
+            background-size: 200% auto; -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; animation: shine 3s linear infinite;
+            filter: drop-shadow(0 0 5px rgba(0,242,255,0.3));
+            display: block;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        .sidebar { 
+            transition: 0.4s; transform: translateX(-100%); position: fixed; 
+            inset: 0; width: 300px; z-index: 1000; 
+            background: var(--sidebar-bg); backdrop-filter: blur(40px);
+            border-right: 1px solid var(--border);
+            padding-top: env(safe-area-inset-top, 40px);
+        }
+        .sidebar.active { transform: translateX(0); }
+
+        .btn-glass { 
+            background: rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            color: var(--text); 
+            transition: 0.3s; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-glass:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--accent); }
+        .active-t { border-color: var(--accent) !important; background: rgba(0, 242, 255, 0.1) !important; }
+
+        .holo-btn {
+            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px; padding: 30px 15px; text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); transition: 0.4s;
+            cursor: pointer;
+        }
+        .holo-btn:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+        
+        .show-ui-btn-colorful {
+            background: linear-gradient(to right, #ff0080, #7000ff, #00f2ff);
+            color: white; border-radius: 50px; padding: 10px 12px;
+            font-size: 10px; font-weight: 900; width: 90%; margin: 10px auto;
+        }
+
+        .hybrid-box {
+            background: var(--glass); backdrop-filter: blur(15px);
+            border-radius: 18px; padding: 1.2rem; margin-bottom: 0.8rem;
+            border: 1px solid var(--border);
+            transition: border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ayah-tag {
+            position: absolute; top: 8px; left: 12px;
+            font-size: 10px; font-weight: 900; opacity: 0.4;
+            letter-spacing: 1px;
+        }
+        
+        .quran-mushaf { font-size: 1.35rem; line-height: 2.6rem; text-align: justify; word-spacing: -1px; }
+        .quran-ara { font-size: 1.25rem; line-height: 2.2rem; text-align: right; }
+        .quran-urd { font-size: 0.92rem; line-height: 1.8rem; opacity: 0.8; text-align: right; font-family: 'Noto Nastaliq Urdu', serif; color: var(--accent); }
+        
+        .active-ayat { border: 2px solid var(--accent) !important; background: rgba(0, 242, 255, 0.15) !important; box-shadow: 0 0 20px rgba(0, 242, 255, 0.1); }
+        .hidden-ui { display: none !important; }
+        .urdu-font { font-family: 'Noto Nastaliq Urdu', serif; }
+        
+        #searchPanel, #translationModal { position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: none; padding: 20px; overflow-y: auto; padding-top: env(safe-area-inset-top, 40px); }
+        
+        .t-bar::-webkit-scrollbar { display: none; }
+        .t-btn { font-size: 9px; white-space: nowrap; padding: 4px 10px; flex-shrink: 0; }
+
+        .surah-name-float {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(0, 242, 255, 0.15); backdrop-filter: blur(10px);
+            text-align: center; padding: 5px; font-size: 13px; font-weight: bold;
+            color: var(--accent); z-index: 40; border-top: 1px solid var(--border);
+            display: none; box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+            padding-bottom: env(safe-area-inset-bottom, 5px);
+        }
+        #syncBtn.syncing { animation: pulse 1.5s infinite; opacity: 0.6; pointer-events: none; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        #offlineCard, #exitCard {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .offline-box {
+            background: var(--sidebar-bg); border: 1px solid var(--accent);
+            border-radius: 24px; padding: 30px; text-align: center; max-width: 320px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--accent);
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+        .back-btn:active { transform: scale(0.9); background: var(--accent); color: black; }
+
+        /* LANDSCAPE OPTIMIZATION */
+        @media (orientation: landscape) {
+            header {
+                position: fixed; top: 0; left: 0; width: 20%; height: 100vh;
+                padding: 15px !important; border-right: 1px solid var(--border);
+                overflow-y: auto; background: var(--sidebar-bg);
+            }
+            header .max-w-7xl > div:first-child { flex-direction: column; gap: 15px; }
+            header .flex { flex-direction: column; width: 100%; gap: 10px; }
+            header .btn-glass { width: 100% !important; height: 45px; }
+            header .t-bar { flex-direction: column; overflow-x: visible; }
+            header .animated-title { font-size: 1.2rem; white-space: normal; line-height: 1.2; }
+            
+            main#mainContent {
+                margin-left: 20%; margin-right: 20%; width: 60%;
+                max-width: none; padding-bottom: 50px; transition: all 0.4s ease;
+            }
+            
+            /* Full Width when Hidden */
+            body.ui-hidden main#mainContent {
+                margin-right: 0; width: 80%;
+            }
+            body.ui-hidden #audioPanel { display: none !important; }
+
+            #audioPanel {
+                position: fixed; top: 0; right: 0; left: auto; bottom: 0;
+                width: 20%; height: 100vh; transform: none; max-width: none;
+                z-index: 100;
+            }
+            #audioPanel .hybrid-box {
+                height: 100%; border-radius: 0; border-top: none; 
+                border-left: 1px solid var(--border); display: flex; flex-direction: column;
+                justify-content: center; padding: 15px;
+            }
+            #scrollUI { flex-direction: column; gap: 10px; }
+            #playerDetails { display: block !important; }
+            #showUI { display: none !important; }
+            .surah-name-float { left: 20%; right: 20%; width: 60%; }
+            #homeMenu { margin-top: 20px; }
+            
+            /* Show UI Button Position in Header during Landscape */
+            #showUI_Landscape { display: none; }
+            body.ui-hidden #showUI_Landscape { display: block !important; }
+        }
+    </style>
+</head>
+<body onload="init()">
+
+    <div id="offlineCard">
+        <div class="offline-box">
+            <div class="text-5xl mb-4">📡</div>
+            <h2 class="urdu-font text-2xl font-bold mb-2 text-white">انٹرنیٹ دستیاب نہیں ہے</h2>
+            <p class="urdu-font text-sm opacity-70 mb-6 text-white/80">تلاوت سننے کے لیے انٹرنیٹ ضروری ہے۔ براہ کرم اپنا کنکشن چیک کر کے ریٹرائی دبائیں۔</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="document.getElementById('offlineCard').style.display='none'" class="btn-glass py-3 font-bold text-xs uppercase tracking-widest">Back to Reading</button>
+                <button id="retryBtn" class="bg-accent text-black py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-accent/20">Retry Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exitCard">
+        <div class="offline-box">
+            <div class="text-5xl mb-4">🛑</div>
+            <h2 class="urdu-font text-2xl font-bold mb-2 text-white">ایپ بند کریں؟</h2>
+            <p class="urdu-font text-sm opacity-70 mb-6 text-white/80">کیا آپ واقعی قرآن ایکسپلورر بند کرنا چاہتے ہیں؟</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="confirmExit(false)" class="btn-glass py-3 font-bold text-xs uppercase tracking-widest">نہیں (No)</button>
+                <button onclick="confirmExit(true)" class="bg-red-500 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-500/20">ہاں (Close)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="floatingSurahName" class="surah-name-float urdu-font"></div>
+
+    <div id="translationModal" onclick="this.style.display='none'" class="backdrop-blur-md bg-black/60 flex items-center justify-center p-4">
+        <div class="hybrid-box max-w-lg w-full p-6 text-right relative" onclick="event.stopPropagation()">
+            <button onclick="document.getElementById('translationModal').style.display='none'" class="absolute top-4 left-4 text-red-500 font-bold">✕</button>
+            <div id="transContent"></div>
+        </div>
+    </div>
+
+    <div id="sidebar" class="sidebar p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black">فہرست</h2>
+            <button onclick="toggleSidebar()" class="text-red-500 text-3xl">✕</button>
+        </div>
+        <div class="bg-white/5 p-4 rounded-2xl mb-4 border border-white/10 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <p class="text-[10px] opacity-50 font-bold uppercase tracking-widest">Go To Ayat</p>
+                <button onclick="loadLastRead()" class="text-[9px] bg-accent/20 text-accent px-2 py-1 rounded font-bold">LAST READ</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="number" id="jumpS" placeholder="S#" class="bg-white/5 border border-white/10 rounded p-1 w-14 text-center text-xs outline-none text-accent">
+                <input type="number" id="jumpA" placeholder="A#" class="bg-white/5 border border-white/10 rounded p-1 w-14 text-center text-xs outline-none text-accent">
+                <button onclick="quickJump()" class="btn-glass px-3 py-1 text-xs font-bold flex-1">GO</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <button onclick="showNav('surah')" class="btn-glass py-3 text-xs font-bold">Surah</button>
+            <button onclick="showNav('para')" class="btn-glass py-3 text-xs font-bold">Para</button>
+        </div>
+        <div id="navList" class="space-y-2 overflow-y-auto max-h-[50vh]"></div>
+    </div>
+
+    <header id="mainHeader" class="p-3 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex gap-2">
+                    <button onclick="toggleSidebar()" class="btn-glass w-11 h-11 text-xl">☰</button>
+                    <button onclick="toggleTheme()" class="btn-glass w-11 h-11">☀️</button>
+                </div>
+                <div class="text-center flex-1 px-1">
+                    <h1 class="animated-title leading-tight mb-1">قرآن ایکسپلورر</h1>
+                    <p class="urdu-font text-[10px] opacity-60 mb-1" dir="rtl">پیشکش: سید ساخر ہاشمی</p>
+                    <div class="flex items-center justify-center gap-2">
+                         <button onclick="goHome()" class="back-btn">← Back</button>
+                         <button onclick="goHome()" class="px-5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg border border-white/20 uppercase">Menu</button>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleSearch(true)" class="btn-glass w-11 h-11">🔍</button>
+                    <select id="viewMode" onchange="renderContent()" class="btn-glass px-1 text-[10px] font-black outline-none bg-transparent h-11">
+                        <option value="hybrid">Hybrid</option>
+                        <option value="mushaf">Mushaf</option>
+                    </select>
+                </div>
+            </div>
+            <div class="t-bar flex gap-1.5 overflow-x-auto justify-center py-1" dir="rtl">
+                <button onclick="setT('ur.jawadi', this)" class="btn-glass t-btn urdu-font active-t">ذیشان جوادی</button>
+                <button onclick="setT('ur.kanzuliman', this)" class="btn-glass t-btn urdu-font">احمد رضا</button>
+                <button onclick="setT('ur.junagarhi', this)" class="btn-glass t-btn urdu-font">جوناگڑھی</button>
+                <button onclick="setT('ur.jalandhry', this)" class="btn-glass t-btn urdu-font">جالندھری</button>
+            </div>
+            <button id="showUI_Landscape" onclick="showControls()" class="show-ui-btn-colorful hidden">▲ SHOW CONTROLS</button>
+        </div>
+    </header>
+
+    <main id="mainContent" class="max-w-2xl mx-auto p-4 mb-64 transition-all duration-500">
+        <div id="homeMenu" class="grid grid-cols-2 gap-5 mt-12">
+            <div onclick="document.getElementById('viewMode').value='mushaf'; toggleSidebar();" class="holo-btn bg-cyan-500/10"><div class="text-3xl mb-2">📖</div><div class="urdu-font text-xl font-bold">مصحف</div></div>
+            <div onclick="document.getElementById('viewMode').value='hybrid'; toggleSidebar();" class="holo-btn bg-purple-500/10"><div class="text-3xl mb-2">✍️</div><div class="urdu-font text-xl font-bold">ترجمہ</div></div>
+            <div onclick="toggleSearch(true)" class="holo-btn bg-green-500/10"><div class="text-3xl mb-2">🔍</div><div class="urdu-font text-xl font-bold">سرچ</div></div>
+            <div onclick="triggerAudioMode()" class="holo-btn bg-orange-500/10"><div class="text-3xl mb-2">🎙️</div><div class="urdu-font text-xl font-bold">تلاوت</div></div>
+            <div id="syncBtn" onclick="syncAllData()" class="holo-btn bg-blue-500/10 col-span-2 py-4"><div class="text-2xl mb-1">📥</div><div class="urdu-font text-lg font-bold">آف لائن ڈیٹا لوڈ کریں</div></div>
+        </div>
+        <div id="content"></div>
+    </main>
+
+    <div id="audioPanel" class="fixed bottom-2 left-1/2 -translate-x-1/2 w-[94%] max-w-lg z-50" dir="ltr">
+        <div class="hybrid-box p-4 shadow-2xl border-t-2 border-accent">
+            <div id="scrollUI" class="flex justify-center items-center gap-4 mb-4">
+                <div class="flex items-center gap-2 bg-black/10 p-1 px-3 rounded-full">
+                    <button onclick="adjustSpeed(-0.2)" class="text-accent text-2xl px-2">−</button>
+                    <button id="scToggle" onclick="toggleScroll()" class="btn-glass w-10 h-10 text-xs">▶</button>
+                    <button onclick="adjustSpeed(0.2)" class="text-accent text-2xl px-2">+</button>
+                </div>
+                <button id="fullSurahBtn" onclick="playFullSurah()" class="btn-glass px-4 py-2 text-[10px] font-black text-accent">PLAY FULL</button>
+                <button onclick="toggleExpand()" id="expBtn" class="btn-glass px-4 py-2 text-[10px] font-black text-white/80">⛶ EXPAND</button>
+                <button onclick="hideControls()" class="text-[11px] opacity-40">Hide</button>
+            </div>
+            
+            <button id="showUI" onclick="showControls()" class="hidden-ui show-ui-btn-colorful block mb-3">▲ SHOW CONTROLS</button>
+            
+            <div id="playerDetails">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <span class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Mishary Alafasy</span>
+                    <span id="pLoc" class="text-[11px] font-bold text-accent">READY</span>
+                </div>
+                <audio id="player" controls class="w-full h-9 opacity-90"></audio>
+                
+                <div class="flex gap-2 mt-2">
+                    <button onclick="prevAyah()" class="btn-glass flex-1 py-1 text-[10px] font-bold opacity-70">PREV آیت</button>
+                    <button onclick="nextAyah()" class="btn-glass flex-1 py-1 text-[10px] font-bold opacity-70">NEXT آیت</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="searchPanel">
+        <div class="max-w-2xl mx-auto mt-4">
+            <div class="relative flex items-center mb-4">
+                <input type="text" id="globalSearch" oninput="runSearch(this.value)" placeholder="لفظ تلاش کریں ..." class="w-full p-4 rounded-2xl bg-white/5 border border-accent text-white outline-none urdu-font">
+                <div onclick="toggleSearch(false)" class="absolute right-4 text-red-400 cursor-pointer font-bold text-xl">✕</div>
+            </div>
+            <div id="searchResultsCount" class="text-[11px] text-accent font-bold px-2 mb-4 uppercase tracking-widest"></div>
+            <div id="searchResults" class="space-y-4 mt-2 pb-40"></div>
+        </div>
+    </div>
+
+    <script>
+        let qAr = [], qUr = [];
+        let translations = {};
+        let juzCache = { ar: {}, ur: {} };
+        let currentT = 'ur.jawadi';
+        let curS = -1, curP = -1, scrollSpeed = 0, scrollTask = null, autoPlayAudio = false;
+        let isFullPlayMode = false, isExpanded = false;
+        let currentAyahIndex = 0;
+        let activeContentAyahs = [];
+        let wakeLock = null;
+        let lastFailedAction = null; 
+
+        const dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open("QuranOfflinePro", 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                db.createObjectStore("data");
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+
+        async function dbSet(key, val) {
+            const db = await dbPromise;
+            return new Promise(res => {
+                const tx = db.transaction("data", "readwrite");
+                tx.objectStore("data").put(val, key);
+                tx.oncomplete = () => res();
+            });
+        }
+
+        async function dbGet(key) {
+            const db = await dbPromise;
+            return new Promise(res => {
+                const req = db.transaction("data").objectStore("data").get(key);
+                req.onsuccess = () => res(req.result);
+            });
+        }
+
+        function checkActionConnection(callback) {
+            if (!navigator.onLine) {
+                lastFailedAction = callback;
+                document.getElementById('offlineCard').style.display = 'flex';
+                document.getElementById('retryBtn').onclick = () => {
+                    if(navigator.onLine) {
+                        document.getElementById('offlineCard').style.display = 'none';
+                        if(lastFailedAction) {
+                            lastFailedAction();
+                            lastFailedAction = null;
+                        }
+                    }
+                };
+                return false;
+            }
+            return true;
+        }
+
+        window.addEventListener('online', () => {
+            document.getElementById('offlineCard').style.display = 'none';
+        });
+
+        window.addEventListener('popstate', function (event) {
+            history.pushState(null, document.title, location.href);
+            document.getElementById('exitCard').style.display = 'flex';
+        });
+
+        function confirmExit(confirmed) {
+            if (confirmed) {
+                document.getElementById('exitCard').innerHTML = '<div class="offline-box"><p class="urdu-font text-white">براہ کرم سسٹم کا بیک بٹن دوبارہ دبائیں یا ایپ سوائپ کر کے بند کریں۔</p></div>';
+            } else {
+                document.getElementById('exitCard').style.display = 'none';
+            }
+        }
+
+        async function init() {
+            history.pushState(null, document.title, location.href);
+            const cachedAr = await dbGet('quran_ar');
+            const cachedAllT = await dbGet('translations');
+            const cachedJuz = await dbGet('juz_cache');
+
+            if (cachedAr && cachedAllT) {
+                qAr = cachedAr;
+                translations = cachedAllT;
+                qUr = translations[currentT];
+                if(cachedJuz) juzCache = cachedJuz;
+                document.getElementById('syncBtn').style.display = 'none';
+            }
+            showNav('surah');
+            setupAudioEvents();
+            requestWakeLock();
+            setupAutoSaveOnScroll();
+        }
+
+        async function syncAllData() {
+            if(!checkActionConnection(syncAllData)) return;
+            const btn = document.getElementById('syncBtn');
+            btn.classList.add('syncing');
+            btn.querySelector('.urdu-font').innerText = 'لوڈ ہو رہا ہے...';
+            
+            try {
+                const tKeys = ['ur.jawadi', 'ur.kanzuliman', 'ur.junagarhi', 'ur.jalandhry'];
+                const arReq = await fetch('https://api.alquran.cloud/v1/quran/quran-uthmani');
+                const arData = (await arReq.json()).data.surahs;
+                
+                let loadedT = {};
+                for(let key of tKeys) {
+                    const res = await fetch(`https://api.alquran.cloud/v1/quran/${key}`);
+                    loadedT[key] = (await res.json()).data.surahs;
+                }
+
+                let tempJuzCache = { ar: {}, ur: {} };
+                for(let i=1; i<=30; i++) {
+                    const jAr = await fetch(`https://api.alquran.cloud/v1/juz/${i}/quran-uthmani`);
+                    tempJuzCache.ar[i] = (await jAr.json()).data.ayahs;
+                    tempJuzCache.ur[i] = {};
+                    for(let key of tKeys) {
+                        const jUr = await fetch(`https://api.alquran.cloud/v1/juz/${i}/${key}`);
+                        tempJuzCache.ur[i][key] = (await jUr.json()).data.ayahs;
+                    }
+                }
+
+                await dbSet('quran_ar', arData);
+                await dbSet('translations', loadedT);
+                await dbSet('juz_cache', tempJuzCache);
+                
+                qAr = arData;
+                translations = loadedT;
+                qUr = translations[currentT];
+                juzCache = tempJuzCache;
+                btn.style.display = 'none';
+            } catch (e) { 
+                btn.classList.remove('syncing');
+                btn.querySelector('.urdu-font').innerText = 'پھر کوشش کریں';
+            }
+        }
+
+        function setupAutoSaveOnScroll() {
+            let timeout;
+            window.addEventListener('scroll', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const visibleId = getVisibleAyahId();
+                    if (visibleId) {
+                        const globalNum = parseInt(visibleId.split('-')[1]);
+                        const ayahElement = document.getElementById(visibleId);
+                        const inSurah = ayahElement.getAttribute('data-insurah');
+                        const lastData = { s: curS, p: curP, a: parseInt(inSurah), global: globalNum };
+                        localStorage.setItem('lastAyat', JSON.stringify(lastData));
+                    }
+                }, 500);
+            });
+        }
+
+        function getVisibleAyahId() {
+            const ayahs = document.querySelectorAll('[id^="a-"]');
+            for (let a of ayahs) {
+                const rect = a.getBoundingClientRect();
+                if (rect.top >= 80 && rect.top <= window.innerHeight) return a.id;
+            }
+            return null;
+        }
+
+        async function requestWakeLock() {
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        }
+
+        function toggleExpand() {
+            isExpanded = !isExpanded;
+            const header = document.getElementById('mainHeader');
+            const main = document.getElementById('mainContent');
+            const btn = document.getElementById('expBtn');
+            if (isExpanded) {
+                header.classList.add('hide-header');
+                main.style.marginTop = "-80px";
+                btn.innerHTML = "✖ CLOSE";
+                btn.style.color = "#ff4d4d";
+            } else {
+                header.classList.remove('hide-header');
+                main.style.marginTop = "0px";
+                btn.innerHTML = "⛶ EXPAND";
+                btn.style.color = "";
+            }
+        }
+
+        function setupAudioEvents() {
+            const p = document.getElementById('player');
+            p.onended = () => { if (isFullPlayMode) nextAyah(); };
+            p.onerror = () => { if(!navigator.onLine) checkActionConnection(() => p.play()); };
+        }
+
+        function nextAyah() {
+            if (currentAyahIndex < activeContentAyahs.length - 1) {
+                currentAyahIndex++;
+                const a = activeContentAyahs[currentAyahIndex];
+                playAyat(a.number, a.numberInSurah, currentAyahIndex);
+            } else {
+                isFullPlayMode = false;
+                document.getElementById('fullSurahBtn').classList.remove('active-t');
+            }
+        }
+
+        function prevAyah() {
+            if (currentAyahIndex > 0) {
+                currentAyahIndex--;
+                const a = activeContentAyahs[currentAyahIndex];
+                playAyat(a.number, a.numberInSurah, currentAyahIndex);
+            }
+        }
+
+        async function renderContent(keepScroll = false) {
+            if(curS === -1 && curP === -1) return;
+            document.getElementById('homeMenu').style.display = 'none';
+            const mode = document.getElementById('viewMode').value;
+            const container = document.getElementById('content');
+            const floatBar = document.getElementById('floatingSurahName');
+            let dataAr = [], dataUr = [];
+
+            if (curP !== -1) {
+                if(juzCache.ar[curP]) {
+                    dataAr = juzCache.ar[curP];
+                    dataUr = juzCache.ur[curP][currentT];
+                } else if(!checkActionConnection(() => renderContent(keepScroll))) return;
+                floatBar.innerText = `Para ${curP}`;
+            } else {
+                if(qAr[curS]) {
+                    dataAr = qAr[curS].ayahs;
+                    dataUr = qUr[curS].ayahs;
+                } else if(!checkActionConnection(() => renderContent(keepScroll))) return;
+                floatBar.innerText = qAr[curS].name;
+            }
+            
+            floatBar.style.display = 'block';
+            activeContentAyahs = dataAr;
+            currentAyahIndex = 0; 
+
+            let html = '';
+            if(mode === 'mushaf') {
+                html = `<div class="hybrid-box quran-mushaf px-4" dir="rtl">`;
+                dataAr.forEach((a, i) => {
+                    html += `<span id="a-${a.number}" data-insurah="${a.numberInSurah}" onclick="handleTap(${a.number}, ${a.numberInSurah}, ${i})" class="cursor-pointer hover:text-accent transition-colors">${a.text} <b class="text-accent/30 mx-0.5 text-[0.8rem]">﴿${a.numberInSurah}﴾</b></span> `;
+                });
+                html += `</div>`;
+            } else {
+                dataAr.forEach((a, i) => {
+                    html += `<div id="a-${a.number}" data-insurah="${a.numberInSurah}" onclick="handleTap(${a.number}, ${a.numberInSurah}, ${i})" class="hybrid-box cursor-pointer hover:border-accent transition-all">
+                        <div class="ayah-tag">AYAH ${a.numberInSurah}</div>
+                        <div class="quran-ara mb-2 text-right" dir="rtl">${a.text}</div>
+                        <div class="quran-urd text-right" dir="rtl">${dataUr[i].text}</div>
+                    </div>`;
+                });
+            }
+            container.innerHTML = html;
+            if(!keepScroll) window.scrollTo({top: 0, behavior: 'instant'});
+            
+            if(autoPlayAudio) { 
+                setTimeout(() => { playFullSurah(); autoPlayAudio = false; }, 300); 
+            }
+        }
+
+        let lastTap = 0;
+        let tapTimeout;
+        function handleTap(num, inSurah, index) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            clearTimeout(tapTimeout);
+            if (tapLength < 300 && tapLength > 0) {
+                isFullPlayMode = false; 
+                playAyat(num, inSurah, index);
+            } else {
+                tapTimeout = setTimeout(() => { showTranslation(index); }, 300);
+            }
+            lastTap = currentTime;
+        }
+
+        async function showTranslation(index) {
+            let dataAr = activeContentAyahs;
+            let dataUr = (curP !== -1) ? (juzCache.ur[curP] ? juzCache.ur[curP][currentT] : null) : (qUr[curS] ? qUr[curS].ayahs : null);
+            if(!dataUr && !checkActionConnection(() => showTranslation(index))) return;
+            const modal = document.getElementById('translationModal');
+            const content = document.getElementById('transContent');
+            content.innerHTML = `
+                <div class="text-accent font-bold mb-2 text-xs">Ayat ${dataAr[index].numberInSurah}</div>
+                <div class="quran-ara text-xl mb-4">${dataAr[index].text}</div>
+                <div class="quran-urd text-base border-t border-white/10 pt-4">${dataUr[index].text}</div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function playAyat(n, inSurah, index) {
+            if(!checkActionConnection(() => playAyat(n, inSurah, index))) return;
+            if(index !== undefined) currentAyahIndex = index;
+            const p = document.getElementById('player');
+            const target = document.getElementById(`a-${n}`);
+            document.querySelectorAll('.active-ayat').forEach(el => el.classList.remove('active-ayat'));
+            if(target) { 
+                target.classList.add('active-ayat'); 
+                target.scrollIntoView({behavior:'smooth', block:'center'}); 
+            }
+            p.src = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${n}.mp3`;
+            p.play().catch(e => { checkActionConnection(() => p.play()); });
+            document.getElementById('pLoc').innerText = `Ayat: ${inSurah}`;
+        }
+
+        function playFullSurah() {
+            if(activeContentAyahs.length === 0) return;
+            isFullPlayMode = true;
+            document.getElementById('fullSurahBtn').classList.add('active-t');
+            const a = activeContentAyahs[currentAyahIndex];
+            playAyat(a.number, a.numberInSurah, currentAyahIndex);
+        }
+
+        function removeDiacritics(text) { return text.replace(/[\u064B-\u065F\u0670]/g, ""); }
+
+        function runSearch(query) {
+            const resDiv = document.getElementById('searchResults');
+            const countDiv = document.getElementById('searchResultsCount');
+            if(query.length < 2) { resDiv.innerHTML = ''; countDiv.innerHTML = ''; return; }
+            let res = [];
+            const cleanQuery = removeDiacritics(query.trim());
+            const regex = new RegExp(`(${query})`, 'gi');
+            qUr.forEach((s, si) => s.ayahs.forEach((a, ai) => {
+                if(a.text.includes(query) || removeDiacritics(qAr[si].ayahs[ai].text).includes(cleanQuery)) {
+                    res.push({ si, ai, sName: s.name, aNum: ai+1, txt: qAr[si].ayahs[ai].text, utxt: a.text, globalNum: qAr[si].ayahs[ai].number });
+                }
+            }));
+            countDiv.innerHTML = `Results: ${res.length}`;
+            resDiv.innerHTML = res.map(r => `<div class="hybrid-box text-right" dir="rtl" onclick="goToLocation(${r.si}, ${r.aNum}, ${r.globalNum})"><div class="flex justify-between text-[9px] mb-1 text-accent font-bold"><span>${r.sName}</span><span>AYAH ${r.aNum}</span></div><div class="quran-ara !text-[1rem]">${r.txt}</div><div class="quran-urd !text-[0.85rem] mt-1">${r.utxt.replace(regex, '<mark class="bg-accent/40 text-white">$1</mark>')}</div></div>`).join('');
+        }
+
+        function goToLocation(si, ai, globalNum) { 
+            curS = si; curP = -1; toggleSearch(false); 
+            renderContent().then(() => { 
+                setTimeout(() => {
+                    const target = document.getElementById(`a-${globalNum}`);
+                    if(target) {
+                        document.querySelectorAll('.active-ayat').forEach(el => el.classList.remove('active-ayat'));
+                        target.classList.add('active-ayat');
+                        target.scrollIntoView({behavior:'smooth', block:'center'});
+                    }
+                }, 600); 
+            }); 
+        }
+
+        function loadLastRead() { 
+            const last = JSON.parse(localStorage.getItem('lastAyat')); 
+            if(last) { 
+                curS = last.s; curP = last.p; toggleSidebar(); 
+                renderContent().then(() => { setTimeout(() => { document.getElementById(`a-${last.global}`)?.scrollIntoView({behavior:'smooth', block:'center'}); }, 800); }); 
+            } 
+        }
+
+        function hideControls() { 
+            document.body.classList.add('ui-hidden'); 
+            document.getElementById('scrollUI').classList.add('hidden-ui'); 
+            document.getElementById('playerDetails').classList.add('hidden-ui'); 
+            document.getElementById('showUI').classList.remove('hidden-ui'); 
+        }
+
+        function showControls() { 
+            document.body.classList.remove('ui-hidden'); 
+            document.getElementById('scrollUI').classList.remove('hidden-ui'); 
+            document.getElementById('playerDetails').classList.remove('hidden-ui'); 
+            document.getElementById('showUI').classList.add('hidden-ui'); 
+        }
+        
+        async function setT(id, btn) { 
+            const currentAyatId = getVisibleAyahId();
+            currentT = id; 
+            document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active-t')); 
+            btn.classList.add('active-t'); 
+            if(translations[id]) { qUr = translations[id]; } 
+            else if(!checkActionConnection(() => setT(id, btn))) return;
+            if(curS !== -1 || curP !== -1) { await renderContent(true); if(currentAyatId) document.getElementById(currentAyatId)?.scrollIntoView({ behavior: 'instant', block: 'start' }); }
+        }
+
+        function triggerAudioMode() { autoPlayAudio = true; toggleSidebar(); }
+        function goHome() { curS = -1; curP = -1; isFullPlayMode = false; document.getElementById('content').innerHTML = ''; document.getElementById('homeMenu').style.display = 'grid'; document.getElementById('floatingSurahName').style.display = 'none'; if(isExpanded) toggleExpand(); }
+        
+        function quickJump() { 
+            const s = parseInt(document.getElementById('jumpS').value) - 1, a = parseInt(document.getElementById('jumpA').value); 
+            if(s >= 0 && s < 114) { 
+                curS = s; curP = -1; renderContent(); toggleSidebar(); 
+                setTimeout(() => {
+                    const globalN = qAr[s].ayahs[a-1].number;
+                    const target = document.getElementById(`a-${globalN}`);
+                    if(target) {
+                        document.querySelectorAll('.active-ayat').forEach(el => el.classList.remove('active-ayat'));
+                        target.classList.add('active-ayat');
+                        target.scrollIntoView({behavior:'smooth', block:'center'});
+                    }
+                }, 500); 
+            } 
+        }
+
+        function showNav(type) { const list = document.getElementById('navList'); if(type === 'surah') { list.innerHTML = qAr.map((s, i) => `<div onclick="curS=${i}; curP=-1; renderContent(); toggleSidebar()" class="btn-glass p-4 flex justify-between items-center text-sm font-bold mb-1"><span>${i+1}. ${s.name}</span> <span class="text-[10px] opacity-40">${s.ayahs.length}</span></div>`).join(''); } else { list.innerHTML = Array.from({length:30}, (_,i) => `<div onclick="loadPara(${i+1})" class="btn-glass p-4 text-center text-sm font-bold mb-1">Para ${i+1}</div>`).join(''); } }
+        function loadPara(n) { curP = n; curS = -1; toggleSidebar(); renderContent(); }
+        function toggleTheme() { document.body.classList.toggle('light-theme'); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function toggleSearch(s) { document.getElementById('searchPanel').style.display = s ? 'block' : 'none'; if(s) document.getElementById('globalSearch').focus(); }
+        function toggleScroll() { const btn = document.getElementById('scToggle'); if (scrollTask) { clearInterval(scrollTask); scrollTask = null; btn.innerText = "▶"; } else { scrollSpeed = 0.5; btn.innerText = "II"; scrollTask = setInterval(() => window.scrollBy(0, scrollSpeed), 30); } }
+        function adjustSpeed(delta) { if (!scrollTask) toggleScroll(); scrollSpeed = Math.max(0.2, scrollSpeed + delta); }
+        document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock(); });
+    </script>
+</body>
+</html>
