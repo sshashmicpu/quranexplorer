@@ -2,14 +2,14 @@
   Strategy: Cache-First (Offline Optimized)
 */
 
-const CACHE_NAME = 'quran-explorer-v1.1.0';
+const CACHE_NAME = 'quran-explorer-v1.2.0'; // Version update kiya hai taake naya cache load ho
 const OFFLINE_URL = 'index.html';
 
-// Essential files jo app load hote hi save honi chahiye
+// Essential files - Inke shuru se '/' hata diya hai taake GitHub Pages par masla na ho
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  'index.html',
+  'manifest.json',
   'icon.png',
   'https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu&family=Inter:wght@400;600&display=swap'
 ];
@@ -18,6 +18,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('Caching essential assets...');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -36,36 +37,37 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 3. Fetch: Dynamic Caching (Yehi offline support ka dil hai)
+// 3. Fetch: Offline Support Logic
 self.addEventListener('fetch', (event) => {
-  // Audio files ke liye Network-Only (kyunki wo bari hoti hain)
+  // Audio files (.mp3) ko skip karein kyunki wo bohot bari hoti hain
   if (event.request.url.includes('.mp3')) {
     return; 
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // 1. Agar cache mein mil jaye to wahin se de do (Fastest)
+      // Agar cache mein file mil jaye to wahi dikhao
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // 2. Agar cache mein nahi hai, to network se mangwao
+      // Agar cache mein nahi hai, to internet se mangwao
       return fetch(event.request).then((networkResponse) => {
-        // Validation: Check if valid response
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+        // Validation: Sirf sahi responses ko cache karein
+        // Google Fonts 'cors' type hote hain, isliye basic check ko thora relax kiya hai
+        if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
 
-        // 3. Network se milne wala naya data (Surahs/APIs) cache mein save karo
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
+          // Dynamic caching: Surahs aur baki data ko save karte jao
           cache.put(event.request, responseToCache);
         });
 
         return networkResponse;
       }).catch(() => {
-        // 4. Agar internet bhi nahi hai aur cache bhi nahi, to offline page
+        // Agar internet nahi hai aur navigation request hai (page load ho raha hai)
         if (event.request.mode === 'navigate') {
           return caches.match(OFFLINE_URL);
         }
