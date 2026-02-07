@@ -1,6 +1,6 @@
 /* Quran Explorer | Service Worker (Ultimate Offline & Font Fix) */
 
-const CACHE_NAME = 'quran-explorer-v3.0'; // Version update for fresh start
+const CACHE_NAME = 'quran-explorer-v1.6'; // Version update for fresh start
 const OFFLINE_URL = './index.html';
 
 const ASSETS_TO_CACHE = [
