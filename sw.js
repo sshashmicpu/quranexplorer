@@ -1,31 +1,29 @@
-/* Quran Explorer | Service Worker (Ultimate Offline & Font Fix) */
+/* Quran Explorer | Service Worker (The Magic Shield) */
 
-const CACHE_NAME = 'quran-explorer-v1.6'; // Version update for fresh start
+const CACHE_NAME = 'quran-explorer-v1.6'; 
 const OFFLINE_URL = './index.html';
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json',
-  './icon.png',
   'https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu&family=Inter:wght@400;600&display=swap'
 ];
 
-// 1. Install: Assets ko cache mein save karna
+// 1. Install: Files ko cache mein lock karna
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.all(
         ASSETS_TO_CACHE.map(url => {
-          return cache.add(url).catch(err => console.log('Initial cache fail:', url));
+          return cache.add(url).catch(err => console.log('Cache fail for:', url));
         })
       );
     })
   );
 });
 
-// 2. Activate: Purana kachra saaf karna
+// 2. Activate: Purana data saaf karna
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -37,27 +35,25 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 3. Fetch: Sab kuch offline chalane ke liye
+// 3. Fetch: Offline hone par cache se data nikalna
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // 1. Agar cache mein mil jaye to foran wahi dikhao
+      // Agar cache mein hai to wahi dikhao
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // 2. Agar cache mein nahi hai, to internet se mangwao
+      // Warna internet se lao
       return fetch(event.request).then((networkResponse) => {
-        // Validation: Sirf sahi responses ko cache mein dalien
         if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
 
-        // Font files aur Audio files ko dynamic cache mein save karna
-        // 'fonts.gstatic.com' ko handle karna zaruri hai taake Urdu font na bigre
-        if (url.includes('.mp3') || url.includes('fonts.gstatic.com') || url.includes('alquran.cloud')) {
+        // Fonts aur heavy files ko save kar lo taake agli baar offline chalein
+        if (url.includes('fonts.gstatic.com') || url.includes('.mp3')) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -66,9 +62,9 @@ self.addEventListener('fetch', (event) => {
 
         return networkResponse;
       }).catch(() => {
-        // 3. Bilkul offline hone ki surat mein
+        // Agar internet nahi hai aur file cache mein bhi nahi
         if (event.request.mode === 'navigate') {
-          return caches.match(OFFLINE_URL) || caches.match('./');
+          return caches.match(OFFLINE_URL);
         }
       });
     })
