@@ -1,6 +1,6 @@
 /* Quran Explorer | Service Worker (The Magic Shield) */
 
-const CACHE_NAME = 'quran-explorer-v1.6'; 
+const CACHE_NAME = 'quran-explorer-v1.0.7'; 
 const OFFLINE_URL = './index.html';
 
 const ASSETS_TO_CACHE = [
