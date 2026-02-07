@@ -1,28 +1,29 @@
-/* Quran Explorer | Service Worker 
-  Strategy: Cache-First (Offline Optimized)
-*/
+/* Quran Explorer | Service Worker (GitHub Pages Optimized) */
 
-const CACHE_NAME = 'quran-explorer-v1.2.3'; // Version update kiya hai taake naya cache load ho
+const CACHE_NAME = 'quran-explorer-v2.0'; 
 const OFFLINE_URL = 'index.html';
 
-// Essential files - Inke shuru se '/' hata diya hai taake GitHub Pages par masla na ho
 const ASSETS_TO_CACHE = [
   './',
-  'index.html',
-  'manifest.json',
-  'icon.png',
+  './index.html',
+  './manifest.json',
+  './icon.png',
   'https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu&family=Inter:wght@400;600&display=swap'
 ];
 
 // 1. Install: Assets ko cache mein save karna
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching essential assets...');
-      return cache.addAll(ASSETS_TO_CACHE);
+      // addAll ki jagah map istemal kiya taake agar aik file na bhi mile to baki cache ho jayein
+      return Promise.all(
+        ASSETS_TO_CACHE.map(url => {
+          return cache.add(url).catch(err => console.log('Cache failed for:', url));
+        })
+      );
     })
   );
-  self.skipWaiting();
 });
 
 // 2. Activate: Purane caches saaf karna
@@ -37,39 +38,41 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 3. Fetch: Offline Support Logic
+// 3. Fetch: Asli Offline Support
 self.addEventListener('fetch', (event) => {
-  // Audio files (.mp3) ko skip karein kyunki wo bohot bari hoti hain
+  // Audio files ke liye Network-First strategy (Offline audio sirf tab chalega agar wo cache mein ho)
   if (event.request.url.includes('.mp3')) {
-    return; 
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        return cached || fetch(event.request).then(response => {
+          const respClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, respClone));
+          return response;
+        }).catch(() => null); // Offline audio fail silenty
+      })
+    );
+    return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Agar cache mein file mil jaye to wahi dikhao
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+      if (cachedResponse) return cachedResponse;
 
-      // Agar cache mein nahi hai, to internet se mangwao
       return fetch(event.request).then((networkResponse) => {
-        // Validation: Sirf sahi responses ko cache karein
-        // Google Fonts 'cors' type hote hain, isliye basic check ko thora relax kiya hai
-        if (!networkResponse || networkResponse.status !== 200) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
 
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          // Dynamic caching: Surahs aur baki data ko save karte jao
           cache.put(event.request, responseToCache);
         });
 
         return networkResponse;
       }).catch(() => {
-        // Agar internet nahi hai aur navigation request hai (page load ho raha hai)
+        // Sabse zaruri: Agar page load na ho raha ho to index.html dikhao
         if (event.request.mode === 'navigate') {
-          return caches.match(OFFLINE_URL);
+          return caches.match('./index.html') || caches.match('./');
         }
       });
     })
