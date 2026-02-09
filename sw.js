@@ -1,4 +1,4 @@
-const cacheName = 'app-v1.0.1'; // HashPlayer ke liye alag version rakhein
+const cacheName = 'app-v1.0.2'; // HashPlayer ke liye alag version rakhein
 const assets = [
   './',
   './index.html',
