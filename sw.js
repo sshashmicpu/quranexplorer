@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quran-explorer-final-v1';
+const CACHE_NAME = 'quran-explorer-final-v1.0';
 
 // 1. Assets to cache immediately on first load
 const STATIC_ASSETS = [
