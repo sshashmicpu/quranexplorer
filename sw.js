@@ -1,72 +1,64 @@
-/* Quran Explorer | Service Worker (The Magic Shield) */
+const CACHE_NAME = 'quran-explorer-final-v1';
 
-const CACHE_NAME = 'quran-explorer-v1.0.7'; 
-const OFFLINE_URL = './index.html';
-
-const ASSETS_TO_CACHE = [
+// 1. Assets to cache immediately on first load
+const STATIC_ASSETS = [
   './',
   './index.html',
-  'https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Noto+Nastaliq+Urdu&family=Inter:wght@400;600&display=swap'
+  './manifest.json',
+  './icon.png',
+  // Yahan agar aapki CSS ya JS files hain toh unka sahi path likhein:
+  // './style.css',
+  // './app.js'
 ];
 
-// 1. Install: Files ko cache mein lock karna
+// 2. Install Event - Sab kuch memory mein save karna
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return Promise.all(
-        ASSETS_TO_CACHE.map(url => {
-          return cache.add(url).catch(err => console.log('Cache fail for:', url));
-        })
-      );
+      console.log('Finalizing Quran Explorer Cache...');
+      return cache.addAll(STATIC_ASSETS);
     })
   );
+  self.skipWaiting();
 });
 
-// 2. Activate: Purana data saaf karna
+// 3. Activate Event - Purana kachra saaf karna
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
     })
   );
   self.clients.claim();
 });
 
-// 3. Fetch: Offline hone par cache se data nikalna
+// 4. Fetch Event - The "No-Gunjaysh" Strategy
+// Ye logic check karta hai: Pehle Cache -> Phir Network -> Phir Save to Cache
 self.addEventListener('fetch', (event) => {
-  const url = event.request.url;
+  if (event.request.method !== 'GET') return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Agar cache mein hai to wahi dikhao
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // Warna internet se lao
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
-        }
-
-        // Fonts aur heavy files ko save kar lo taake agli baar offline chalein
-        if (url.includes('fonts.gstatic.com') || url.includes('.mp3')) {
+      // Agar cache mein hai toh foran dikhao (Super Fast)
+      const networkFetch = fetch(event.request).then((networkResponse) => {
+        // Network se mil jaye toh cache ko update kar do (Background Update)
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
-
         return networkResponse;
       }).catch(() => {
-        // Agar internet nahi hai aur file cache mein bhi nahi
+        // Agar net nahi hai aur cache mein bhi nahi, toh home page dikhao
         if (event.request.mode === 'navigate') {
-          return caches.match(OFFLINE_URL);
+          return caches.match('./index.html');
         }
       });
+
+      return cachedResponse || networkFetch;
     })
   );
 });
