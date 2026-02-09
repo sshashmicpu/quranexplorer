@@ -1,64 +1,53 @@
-const CACHE_NAME = 'quran-explorer-final-v1.0';
-
-// 1. Assets to cache immediately on first load
-const STATIC_ASSETS = [
+const cacheName = 'app-v1.0.1'; // HashPlayer ke liye alag version rakhein
+const assets = [
   './',
   './index.html',
   './manifest.json',
-  './icon.png',
-  // Yahan agar aapki CSS ya JS files hain toh unka sahi path likhein:
-  // './style.css',
-  // './app.js'
+  './icon.png'
 ];
 
-// 2. Install Event - Sab kuch memory mein save karna
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Finalizing Quran Explorer Cache...');
-      return cache.addAll(STATIC_ASSETS);
+// 1. Install: Files ko foran save karna
+self.addEventListener('install', e => {
+  self.skipWaiting(); 
+  e.waitUntil(
+    caches.open(cacheName).then(cache => {
+      return cache.addAll(assets);
     })
   );
-  self.skipWaiting();
 });
 
-// 3. Activate Event - Purana kachra saaf karna
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
+// 2. Activate: Purana cache clear karna
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.filter(key => key !== cacheName).map(key => caches.delete(key))
       );
     })
   );
-  self.clients.claim();
+  return self.clients.claim();
 });
 
-// 4. Fetch Event - The "No-Gunjaysh" Strategy
-// Ye logic check karta hai: Pehle Cache -> Phir Network -> Phir Save to Cache
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+// 3. Fetch: Asli Ilaj yahan hai!
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // Agar cache mein hai toh foran dikhao (Super Fast)
-      const networkFetch = fetch(event.request).then((networkResponse) => {
-        // Network se mil jaye toh cache ko update kar do (Background Update)
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
+  e.respondWith(
+    caches.match(e.request).then(response => {
+      // Agar cache mein file mil jaye toh foran wahi dikhao
+      if (response) return response;
+
+      // Agar cache mein nahi hai toh network se lo
+      return fetch(e.request).then(networkRes => {
+        // Network se mil jaye toh usay cache mein save kar lo future ke liye
+        return caches.open(cacheName).then(cache => {
+          cache.put(e.request, networkRes.clone());
+          return networkRes;
+        });
       }).catch(() => {
-        // Agar net nahi hai aur cache mein bhi nahi, toh home page dikhao
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
+        // AGAR NET NAHI HAI (Offline), TOH ERROR DIKHANE KE BAJAYE INDEX KHOLO
+        return caches.match('./index.html');
       });
-
-      return cachedResponse || networkFetch;
     })
   );
 });
