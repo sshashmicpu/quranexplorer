@@ -1,6 +1,6 @@
 {
-  "name": "Quran Explorer | HashTech",
-  "short_name": "Quran Explorer",
+  "name": "Quran Digital | HashTech",
+  "short_name": "Quran Digital",
   "description": "Read, Listen, understand and search Quran With urdu multiple translations.",
   "start_url": "./index.html",
   "display": "standalone",
